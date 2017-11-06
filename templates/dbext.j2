@@ -24,6 +24,6 @@ $TTL    {{ item.value.ttl|default(3600) }}
 {% endfor %}
 {% if 'dnssec' in item.value and item.value.dnssec %}
 
-$INCLUDE {{ item.key }}.key
-$INCLUDE {{ item.key }}-ksk.key
+$INCLUDE /etc/bind/keys/externe/{{ item.key }}.key
+$INCLUDE /etc/bind/keys/externe/{{ item.key }}-ksk.key
 {% endif %}

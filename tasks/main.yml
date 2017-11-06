@@ -17,6 +17,24 @@
     state: directory
   tags: bind
 
+- name: create zone directory interne
+  file:
+    path: /etc/bind/zones/interne
+    owner: bind
+    group: bind
+    mode: 0700
+    state: directory
+  tags: bind
+
+- name: create zone directory externe
+  file:
+    path: /etc/bind/zones/externe
+    owner: bind
+    group: bind
+    mode: 0700
+    state: directory
+  tags: bind
+
 - name: create log directory
   file:
     path: /var/log/named
@@ -49,24 +67,61 @@
     state: directory
   tags: bind
 
+- name: create keys directory interne
+  file:
+    path: /etc/bind/keys/interne
+    owner: root
+    group: bind
+    mode: 0750
+    state: directory
+  tags: bind
+
+- name: create keys directory externe
+  file:
+    path: /etc/bind/keys/externe
+    owner: root
+    group: bind
+    mode: 0750
+    state: directory
+  tags: bind
+
 - include: keys.yml
   when: bind_role == 'master'
 
-- name: copy zone files
+- name: copy zone files interne
   template:
-    src: db.j2
-    dest: '/etc/bind/zones/db.{{ item.key }}'
+    src: dbint.j2
+    dest: '/etc/bind/zones/interne/db.{{ item.key }}'
     owner: root
     group: root
     mode: 0644
-  with_dict: '{{ bind_zones }}'
-  register: zone
+  with_dict: '{{ bind_zones_interne }}'
+  register: zone1
   notify: reload bind
   tags: bind
 
-- name: dnssec sign
-  shell: 'cd /etc/bind/keys && dnssec-signzone -3 $(head -n 1000 /dev/urandom | sha1sum | cut -b 1-16) -A -N INCREMENT -o {{ item.item.key }} -t /etc/bind/zones/db.{{ item.item.key }}'
-  with_items: '{{ zone.results }}'
+- name: copy zone files externe
+  template:
+    src: dbext.j2
+    dest: '/etc/bind/zones/externe/db.{{ item.key }}'
+    owner: root
+    group: root
+    mode: 0644
+  with_dict: '{{ bind_zones_externe }}'
+  register: zone2
+  notify: reload bind
+  tags: bind
+
+- name: dnssec sign 1/2 interne
+  shell: 'cd /etc/bind/keys/interne && dnssec-signzone -3 $(head -n 1000 /dev/urandom | sha1sum | cut -b 1-16) -A -N INCREMENT -o {{ item.item.key }} -t /etc/bind/zones/interne/db.{{ item.item.key }}'
+  with_items: '{{ zone1.results }}'
+  when: item.changed and item.item.value.dnssec is defined and item.item.value.dnssec
+  notify: reload bind
+  tags: bind
+
+- name: dnssec sign 1/2 externe
+  shell: 'cd /etc/bind/keys/externe && dnssec-signzone -3 $(head -n 1000 /dev/urandom | sha1sum | cut -b 1-16) -A -N INCREMENT -o {{ item.item.key }} -t /etc/bind/zones/externe/db.{{ item.item.key }}'
+  with_items: '{{ zone2.results }}'
   when: item.changed and item.item.value.dnssec is defined and item.item.value.dnssec
   notify: reload bind
   tags: bind

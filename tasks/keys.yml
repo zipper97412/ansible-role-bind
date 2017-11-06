@@ -1,99 +1,200 @@
-- name: check if key has been generated
+- name: check if key has been generated interne
   stat:
-    path: '/etc/bind/keys/{{ item.key }}-ksk.key'
-  with_dict: '{{ bind_zones }}'
+    path: '/etc/bind/keys/interne/{{ item.key }}-ksk.key'
+  with_dict: '{{ bind_zones_interne }}'
   when: item.value.dnssec is defined and item.value.dnssec
-  register: st
+  register: st1
   tags: bind
 
-- name: generated keys for dnssec 1/2
+- name: generated keys for dnssec 1/2 interne
   shell: 'dnssec-keygen -a RSASHA256 -b 2048 -r /dev/urandom -n ZONE {{ item.item.key }}'
   args:
     chdir: /tmp
-  with_items: '{{ st.results }}'
+  with_items: '{{ st1.results }}'
   when: item.stat is defined and not item.stat.exists
-  register: stdout
+  register: stdout1
   tags: bind
 
-- name: move key file 1/2
+- name: move key file 1/2 interne
   copy:
     remote_src: true
     src: '/tmp/{{ item[0].stdout }}.{{ item[1] }}'
-    dest: '/etc/bind/keys/{{ item[0].stdout }}.{{ item[1] }}'
+    dest: '/etc/bind/keys/interne/{{ item[0].stdout }}.{{ item[1] }}'
     owner: root
     group: bind
     mode: 0640
   with_nested:
-    - '{{ stdout.results }}'
+    - '{{ stdout1.results }}'
     - ['key', 'private']
   when: not item[0].skipped is defined
   tags: bind
 
-- name: link key file 1/2
+- name: link key file 1/2 interne
   file:
-    src: '/etc/bind/keys/{{ item[0].stdout }}.{{ item[1] }}'
-    dest: '/etc/bind/keys/{{ item[0].item.item.key }}.{{ item[1] }}'
+    src: '/etc/bind/keys/interne/{{ item[0].stdout }}.{{ item[1] }}'
+    dest: '/etc/bind/keys/interne/{{ item[0].item.item.key }}.{{ item[1] }}'
     owner: root
     group: root
     state: link
   with_nested:
-    - '{{ stdout.results }}'
+    - '{{ stdout1.results }}'
     - ['key', 'private']
   when: not item[0].skipped is defined
   tags: bind
 
-- name: remove old key file 1/2
+- name: remove old key file 1/2 interne
   file:
     path: '{{ item[0].stdout }}.{{ item[1] }}'
     state: absent
   with_nested:
-    - '{{ stdout.results }}'
+    - '{{ stdout1.results }}'
     - ['key', 'private']
   when: not item[0].skipped is defined
   tags: bind
 
-- name: generated keys for dnssec 2/2
+- name: generated keys for dnssec 2/2 interne
   shell: 'dnssec-keygen -f KSK -a RSASHA256 -b 4096 -r /dev/urandom -n ZONE {{ item.item.key }}'
   args:
     chdir: /tmp
-  with_items: '{{ st.results }}'
+  with_items: '{{ st1.results }}'
   when: item.stat is defined and not item.stat.exists
-  register: stdout
+  register: stdout1
   tags: bind
 
-- name: move key file 2/2
+- name: move key file 2/2 interne
   copy:
     remote_src: true
     src: '/tmp/{{ item[0].stdout }}.{{ item[1] }}'
-    dest: '/etc/bind/keys/{{ item[0].stdout }}.{{ item[1] }}'
+    dest: '/etc/bind/keys/interne/{{ item[0].stdout }}.{{ item[1] }}'
     owner: root
     group: bind
     mode: 0640
   with_nested:
-    - '{{ stdout.results }}'
+    - '{{ stdout1.results }}'
     - ['key', 'private']
   when: not item[0].skipped is defined
   tags: bind
 
-- name: link key file 2/2
+- name: link key file 2/2 interne
   file:
-    src: '/etc/bind/keys/{{ item[0].stdout }}.{{ item[1] }}'
-    dest: '/etc/bind/keys/{{ item[0].item.item.key }}-ksk.{{ item[1] }}'
+    src: '/etc/bind/keys/interne/{{ item[0].stdout }}.{{ item[1] }}'
+    dest: '/etc/bind/keys/interne/{{ item[0].item.item.key }}-ksk.{{ item[1] }}'
     owner: root
     group: root
     state: link
   with_nested:
-    - '{{ stdout.results }}'
+    - '{{ stdout1.results }}'
     - ['key', 'private']
   when: not item[0].skipped is defined
   tags: bind
 
-- name: remove old key file 2/2
+- name: remove old key file 2/2 interne
   file:
     path: '{{ item[0].stdout }}.{{ item[1] }}'
     state: absent
   with_nested:
-    - '{{ stdout.results }}'
+    - '{{ stdout1.results }}'
+    - ['key', 'private']
+  when: not item[0].skipped is defined
+  tags: bind
+
+
+- name: check if key has been generated externe
+  stat:
+    path: '/etc/bind/keys/externe/{{ item.key }}-ksk.key'
+  with_dict: '{{ bind_zones_externe }}'
+  when: item.value.dnssec is defined and item.value.dnssec
+  register: st2
+  tags: bind
+
+- name: generated keys for dnssec 1/2 externe
+  shell: 'dnssec-keygen -a RSASHA256 -b 2048 -r /dev/urandom -n ZONE {{ item.item.key }}'
+  args:
+    chdir: /tmp
+  with_items: '{{ st2.results }}'
+  when: item.stat is defined and not item.stat.exists
+  register: stdout2
+  tags: bind
+
+- name: move key file 1/2 externe
+  copy:
+    remote_src: true
+    src: '/tmp/{{ item[0].stdout }}.{{ item[1] }}'
+    dest: '/etc/bind/keys/externe/{{ item[0].stdout }}.{{ item[1] }}'
+    owner: root
+    group: bind
+    mode: 0640
+  with_nested:
+    - '{{ stdout2.results }}'
+    - ['key', 'private']
+  when: not item[0].skipped is defined
+  tags: bind
+
+- name: link key file 1/2 externe
+  file:
+    src: '/etc/bind/keys/externe/{{ item[0].stdout }}.{{ item[1] }}'
+    dest: '/etc/bind/keys/externe/{{ item[0].item.item.key }}.{{ item[1] }}'
+    owner: root
+    group: root
+    state: link
+  with_nested:
+    - '{{ stdout2.results }}'
+    - ['key', 'private']
+  when: not item[0].skipped is defined
+  tags: bind
+
+- name: remove old key file 1/2 externe
+  file:
+    path: '{{ item[0].stdout }}.{{ item[1] }}'
+    state: absent
+  with_nested:
+    - '{{ stdout2.results }}'
+    - ['key', 'private']
+  when: not item[0].skipped is defined
+  tags: bind
+
+- name: generated keys for dnssec 2/2 externe
+  shell: 'dnssec-keygen -f KSK -a RSASHA256 -b 4096 -r /dev/urandom -n ZONE {{ item.item.key }}'
+  args:
+    chdir: /tmp
+  with_items: '{{ st2.results }}'
+  when: item.stat is defined and not item.stat.exists
+  register: stdout2
+  tags: bind
+
+- name: move key file 2/2 externe
+  copy:
+    remote_src: true
+    src: '/tmp/{{ item[0].stdout }}.{{ item[1] }}'
+    dest: '/etc/bind/keys/externe/{{ item[0].stdout }}.{{ item[1] }}'
+    owner: root
+    group: bind
+    mode: 0640
+  with_nested:
+    - '{{ stdout2.results }}'
+    - ['key', 'private']
+  when: not item[0].skipped is defined
+  tags: bind
+
+- name: link key file 2/2 externe
+  file:
+    src: '/etc/bind/keys/externe/{{ item[0].stdout }}.{{ item[1] }}'
+    dest: '/etc/bind/keys/externe/{{ item[0].item.item.key }}-ksk.{{ item[1] }}'
+    owner: root
+    group: root
+    state: link
+  with_nested:
+    - '{{ stdout2.results }}'
+    - ['key', 'private']
+  when: not item[0].skipped is defined
+  tags: bind
+
+- name: remove old key file 2/2 externe
+  file:
+    path: '{{ item[0].stdout }}.{{ item[1] }}'
+    state: absent
+  with_nested:
+    - '{{ stdout2.results }}'
     - ['key', 'private']
   when: not item[0].skipped is defined
   tags: bind
